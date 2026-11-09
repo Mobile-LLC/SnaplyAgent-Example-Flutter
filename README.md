@@ -99,6 +99,13 @@ In words:
 Not measured: a physical iPhone (only a simulator was used; whether a snapshot of Flutter's Metal
 layer behaves the same on a device is unproven) and Flutter for the web.
 
+What the agent received — iOS (the two dashboard rules hide the IBAN and the passport), Android in
+`RenderMode.texture`, and Android in Flutter's default render mode:
+
+| iOS | Android | Android, default render mode |
+|---|---|---|
+| ![The capture on iOS](docs/capture-ios.png) | ![The capture on Android](docs/capture-android.png) | ![A blank capture](docs/capture-android-default-render-mode.png) |
+
 ## What is not here yet
 
 - A Dart API: `identify`, `reset` and `showSupportCode` are native calls.
