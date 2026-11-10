@@ -42,8 +42,3 @@ kotlin {
 flutter {
     source = "../.."
 }
-
-dependencies {
-    // The Snaply Agent SDK — one dependency, from Maven Central.
-    implementation("com.snaplyagent:agent:2.38.0")
-}

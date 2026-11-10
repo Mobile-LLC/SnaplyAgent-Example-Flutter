@@ -1,27 +1,19 @@
 # Snaply Agent — Flutter example
 
-A runnable Flutter app with the Snaply Agent SDKs inside, and an honest account of what works.
-There is no Flutter package yet: the app starts the **native iOS and Android SDKs as they are**
-from its two native entry points.
+A runnable Flutter app with Snaply Agent inside, through the
+[`snaply_agent`](https://github.com/Mobile-LLC/SnaplyAgent-SDK-Flutter) package.
 
-Flutter paints its whole screen itself into one native view. The native SDKs capture that view,
-but they find no text fields in it — so **most of what hides a field in a native app does not
-reach a Flutter widget today**. Read "What was measured" before using this in an app that shows
-anything sensitive.
-
-The integration is two functions:
-
-- iOS — [`ios/Runner/AppDelegate.swift`](ios/Runner/AppDelegate.swift)
-- Android — [`android/app/src/main/kotlin/com/example/snaplyexample/flutter/MainActivity.kt`](android/app/src/main/kotlin/com/example/snaplyexample/flutter/MainActivity.kt)
-
-[`lib/main.dart`](lib/main.dart) is the screen the checks were run against.
+The whole integration is in [`lib/main.dart`](lib/main.dart): `Snaply.on` and `Snaply.configure`, and
+`SnaplyRedact` around what must never leave the phone. There is no Snaply code in the `ios` or
+`android` folders.
 
 ## Run it
 
-1. Replace the placeholder key in both native files:
+1. Replace the two placeholder keys at the top of `lib/main.dart`:
 
    ```
-   snap_live_REPLACE_WITH_YOUR_KEY
+   snap_live_REPLACE_WITH_YOUR_IOS_KEY
+   snap_live_REPLACE_WITH_YOUR_ANDROID_KEY
    ```
 
    Get yours from the Snaply console → **Products → your product → API key**. An iOS product and
@@ -33,98 +25,57 @@ The integration is two functions:
 4. Open the console, find the device, and request a screenshot. The consent prompt appears on the
    phone; nothing is captured until it is allowed.
 
-## Adding the SDK to your own Flutter app
+## Adding Snaply to your own Flutter app
 
-**iOS.** Open `ios/Runner.xcworkspace`, *File → Add Package Dependencies…*, and add
-`https://github.com/Mobile-LLC/SnaplyAgent-SDK-iOS` to the Runner target. Raise the deployment
-target to iOS 15, the SDK's floor (Flutter's template says 13). Then, in `AppDelegate.swift`:
-
-```swift
-import SnaplyAgent
-
-Snaply.configure(key: "snap_live_…")
+```yaml
+dependencies:
+  snaply_agent:
+    git: https://github.com/Mobile-LLC/SnaplyAgent-SDK-Flutter
 ```
 
-**Android.** One dependency in `android/app/build.gradle.kts`, from Maven Central:
+```dart
+import 'package:snaply_agent/snaply_agent.dart';
 
-```kotlin
-dependencies {
-    implementation("com.snaplyagent:agent:2.38.0")
-}
+await Snaply.configure(key: 'snap_live_…');
 ```
 
-Then, in `MainActivity`:
+On iOS raise the Runner target's deployment target to 15 (Flutter's template says 13). Nothing else
+is needed on either platform — no render mode, no `AppDelegate` or `MainActivity` code.
 
-```kotlin
-override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    Snaply.init(context = this, key = "snap_live_…")
-}
+## What the screen shows
 
-// Required: without it the agent receives a blank screen.
-override fun getRenderMode(): RenderMode = RenderMode.texture
-```
+| In `lib/main.dart` | In the capture |
+|---|---|
+| A password field (`obscureText: true`) | Hidden on its own |
+| `SnaplyRedact(child: …)` around the card number | Hidden |
+| `SnaplyRedact(label: 'ADDRESS', …)` around a `Text` | Hidden, with its own caption |
+| `Semantics(identifier: 'ibanField', …)` | Hidden once the dashboard has a rule by identifier `ibanField` |
+| A field labelled "Passport number" | Hidden once the dashboard has a rule by text `passport` |
+| The delivery note | Captured as it is — nothing marks it |
 
-Flutter's default render mode on Android draws into a separate `SurfaceView`, which is not part of
-the window the SDK copies. `RenderMode.texture` draws inside the window; Flutter's documentation
-describes it as somewhat slower than the default.
+The box is painted **on the device, before the image is encoded**, and a hidden field takes neither
+a tap nor text from an agent with remote control.
 
-## What was measured
+The buttons under the form call `Snaply.reset()`, `Snaply.identify(…)` and
+`Snaply.showSupportCode()`; the line below them is fed by the callbacks.
 
-On 2026-11-10, with this app as committed: Flutter 3.44.8, the iOS SDK 2.47.0 on an iOS 18.6
-simulator, the Android SDK 2.38.0 on an API 34 emulator, against a local Snaply backend.
+What the agent received — iOS and Android (Flutter's default render mode, a release build):
 
-| | iOS | Android |
-|---|---|---|
-| Registers and comes online | ✓ | ✓ |
-| Screenshot after consent, screen content correct | ✓ | ✓ with `RenderMode.texture`; **blank** in the default mode |
-| Password field (`obscureText`) hidden on its own | ✗ | ✗ |
-| In-code mark (`snaply-redact` as a `Semantics` identifier) | ✗ | ✗ |
-| Dashboard rule by identifier (`Semantics(identifier:)`) | ✓ | ✗ |
-| Dashboard rule by text (`Semantics(label:)`, hint) | ✓ | ✗ |
-| Live view | ✓ | ✓ with `RenderMode.texture` |
-| Remote control — tap a button | ✓ | ✓ |
-| Remote control — type into a field | ✗ | ✗ |
+| iOS | Android |
+|---|---|
+| ![The capture on iOS](docs/capture-ios.png) | ![The capture on Android](docs/capture-android.png) |
 
-In words:
-
-- **Nothing is hidden on Android.** A password, a card number, anything on screen reaches the
-  agent as it is.
-- **On iOS only the dashboard's rules hide a field** (Products → Hidden fields): a rule by
-  identifier matches a widget wrapped in `Semantics(identifier: 'ibanField', …)`, and a rule by
-  text matches its semantics label. A password field is not hidden on its own, and there is no
-  in-code mark.
-- A text rule hides every node whose label contains the text, captions included.
-
-Not measured: a physical iPhone (only a simulator was used; whether a snapshot of Flutter's Metal
-layer behaves the same on a device is unproven) and Flutter for the web.
-
-What the agent received — iOS (the two dashboard rules hide the IBAN and the passport), Android in
-`RenderMode.texture`, and Android in Flutter's default render mode:
-
-| iOS | Android | Android, default render mode |
-|---|---|---|
-| ![The capture on iOS](docs/capture-ios.png) | ![The capture on Android](docs/capture-android.png) | ![A blank capture](docs/capture-android-default-render-mode.png) |
-
-## What is not here yet
-
-- A Dart API: `identify`, `reset` and `showSupportCode` are native calls.
-- A way to hide a widget from Dart, on both platforms, and automatic hiding of `obscureText`
-  fields.
-- Capture in Flutter's default Android render mode, and typing by remote control.
+What was measured, and what was not, is in the
+[package's README](https://github.com/Mobile-LLC/SnaplyAgent-SDK-Flutter#what-was-measured).
 
 ## Pointing the app at another backend
 
-The app reads an override at launch, so it can talk to a backend on your own machine:
+```
+flutter run --dart-define=SNAPLY_KEY=snap_live_… --dart-define=SNAPLY_HOST=http://10.0.2.2:5100
+```
 
-- iOS — the launch environment: `SNAPLY_KEY`, `SNAPLY_HOST` (an Xcode scheme, or
-  `SIMCTL_CHILD_SNAPLY_HOST=http://localhost:5100 xcrun simctl launch …`). It is not behind
-  `#if DEBUG`: Flutter's Runner target does not define `DEBUG` for Swift.
-- Android, debuggable builds — launch intent extras:
-  `--es snaplyKey … --es snaplyHost http://10.0.2.2:5100`.
-
-Plain `http` is accepted for the machine's own loopback only; the debug manifest and
-`Info.plist` allow exactly that.
+Plain `http` is accepted for the machine's own loopback only; the debug manifest and `Info.plist`
+allow exactly that (`localhost` on the iOS simulator, `10.0.2.2` on the Android emulator).
 
 ## Docs
 
