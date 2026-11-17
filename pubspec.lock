@@ -148,11 +148,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.1.0"
-      resolved-ref: efb1daa487b286d4d965217188a72d17e8cc58e7
+      ref: "v1.2.0"
+      resolved-ref: "1d6c03d44324c42496e82312ed4ebfd31e1fc8d1"
       url: "https://github.com/Mobile-LLC/SnaplyAgent-SDK-Flutter.git"
     source: git
-    version: "1.1.0"
+    version: "1.2.0"
   source_span:
     dependency: transitive
     description:
