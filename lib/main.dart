@@ -85,7 +85,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ? _iosKey
                   : _androidKey),
         environment: _hostOverride.isNotEmpty
-            ? const SnaplyEnvironment.custom(_hostOverride)
+            // A backend on your own machine is vouched for by the published development key.
+            ? const SnaplyEnvironment.custom(
+                _hostOverride,
+                serverKeys: [SnaplyEnvironment.developmentMaster],
+              )
             : SnaplyEnvironment.live,
         // Optional — without it the device stays anonymous and support finds it by the support
         // code.

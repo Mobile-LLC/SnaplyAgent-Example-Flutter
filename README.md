@@ -77,6 +77,11 @@ flutter run --dart-define=SNAPLY_KEY=snap_live_… --dart-define=SNAPLY_HOST=htt
 Plain `http` is accepted for the machine's own loopback only; the debug manifest and `Info.plist`
 allow exactly that (`localhost` on the iOS simulator, `10.0.2.2` on the Android emulator).
 
+Everything the SDK and its server exchange is sealed to keys that server's master key vouches for.
+Snaply's own are built in; for `SNAPLY_HOST` the app passes `SnaplyEnvironment.developmentMaster`
+in `serverKeys` (`lib/main.dart`) — the one published key of a Snaply stack on your own machine. A
+server of your own has its own master key: put its public half there instead.
+
 ## Docs
 
 <https://snaplyagent.com/docs>

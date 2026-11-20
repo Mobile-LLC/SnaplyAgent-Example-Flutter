@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Mobile-LLC/SnaplyAgent-SDK-iOS",
       "state" : {
-        "revision" : "5b9e0d132d50c586bacae669526cf26d11019ff8",
-        "version" : "2.51.0"
+        "revision" : "49366f8c7637162941810cd13cd5798ff322b290",
+        "version" : "2.52.0"
       }
     }
   ],
